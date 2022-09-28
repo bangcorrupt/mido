@@ -5,11 +5,19 @@ http://pypi.python.org/pypi/python-rtmidi/
 from __future__ import absolute_import
 import threading
 
+import time
+
 import rtmidi
 from .. import ports
 from ..messages import Message
 from ._parser_queue import ParserQueue
 from .rtmidi_utils import expand_alsa_port_name
+
+MSG_LEN = 512
+SLEEP_TIME = 0.016384
+
+#MSG_LEN = 3
+#SLEEP_TIME = 0.0001
 
 
 def _get_api_lookup():
@@ -179,7 +187,7 @@ class Input(PortCommon, ports.BaseInput):
 
 
 class Output(PortCommon, ports.BaseOutput):
-    _locking = False
+    _locking = True
 
     def _open(self, client_name=None, virtual=False,
               api=None, callback=None, **kwargs):
@@ -201,6 +209,15 @@ class Output(PortCommon, ports.BaseOutput):
     def send(self, msg):
         """Send a message on the port."""
         with self._send_lock:
-            self._rt.send_message(msg.bytes())
+            # Based on https://github.com/mido/mido/pull/60/commits/4e48566c614b8a2333b505b82613d153eb677689
+            if msg.type == 'sysex':
+                t = msg.bytes()
+                while len(t) > MSG_LEN:
+                    h, t = t[:MSG_LEN], t[MSG_LEN:]
+                    self._rt.send_message(h)
+                    time.sleep(SLEEP_TIME)
+                self._rt.send_message(t)
+            else:
+                self._rt.send_message(msg.bytes())
 
     send.__doc__ = ports.BaseOutput.send.__doc__
