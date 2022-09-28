@@ -187,7 +187,7 @@ class Input(PortCommon, ports.BaseInput):
 
 
 class Output(PortCommon, ports.BaseOutput):
-    _locking = True
+    _locking = False
 
     def _open(self, client_name=None, virtual=False,
               api=None, callback=None, **kwargs):
