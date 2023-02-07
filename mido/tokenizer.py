@@ -1,10 +1,9 @@
 from collections import deque
 from numbers import Integral
 from .messages.specs import SYSEX_START, SYSEX_END, SPEC_BY_STATUS
-from .py2 import convert_py2_bytes
 
 
-class Tokenizer(object):
+class Tokenizer:
     """
     Splits a MIDI byte stream into messages.
     """
@@ -78,14 +77,14 @@ class Tokenizer(object):
             else:
                 return self._feed_status_byte(byte)
         else:
-            raise ValueError('invalid byte value {!r}'.format(byte))
+            raise ValueError(f'invalid byte value {byte!r}')
 
     def feed(self, data):
         """Feed MIDI bytes to the decoder.
 
         Takes an iterable of ints in in range [0..255].
         """
-        for byte in convert_py2_bytes(data):
+        for byte in data:
             self.feed_byte(byte)
 
     def __len__(self):

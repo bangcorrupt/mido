@@ -1,7 +1,7 @@
 Parsing MIDI Bytes
 ==================
 
-MIDI is a binary protocol. Each each message is encoded as a status byte
+MIDI is a binary protocol. Each message is encoded as a status byte
 followed by up to three data bytes. (Sysex messages can have any number of
 data bytes and use a stop byte instead.)
 
@@ -33,7 +33,12 @@ Here are a few examples of how it can be used::
     >>> p.feed_byte(0x10)
     >>> p.feed_byte(0x20)
     >>> p.feed([0x80, 0x10, 0x20])
+    >>> p.pending()
+    2
+    >>> p.get_message()
     Message('note_on', channel=0, note=16, velocity=32, time=0)
+    >>> p.get_message()
+    Message('note_off', channel=0, note=16, velocity=32, time=0)
 
 ``feed()`` accepts any iterable that generates integers in 0..255. The
 parser will skip and stray status bytes or data bytes, so you can

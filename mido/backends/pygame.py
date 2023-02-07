@@ -6,7 +6,6 @@ Pygame uses PortMidi, so this is perhaps not very useful.
 http://www.pygame.org/docs/ref/midi.html
 """
 
-from __future__ import absolute_import
 from pygame import midi
 from ..ports import BaseInput, BaseOutput
 
@@ -27,7 +26,7 @@ def _get_default_device(get_input):
         device_id = midi.get_default_output_id()
 
     if device_id < 0:
-        raise IOError('no default port found')
+        raise OSError('no default port found')
 
     return _get_device(device_id)
 
@@ -47,11 +46,11 @@ def _get_named_device(name, get_input):
                 continue
 
         if device['opened']:
-            raise IOError('port already opened: {!r}'.format(name))
+            raise OSError(f'port already opened: {name!r}')
 
         return device
     else:
-        raise IOError('unknown port: {!r}'.format(name))
+        raise OSError(f'unknown port: {name!r}')
 
 
 def get_devices(**kwargs):
@@ -59,10 +58,11 @@ def get_devices(**kwargs):
     return [_get_device(device_id) for device_id in range(midi.get_count())]
 
 
-class PortCommon(object):
+class PortCommon:
     """
     Mixin with common things for input and output ports.
     """
+
     def _open(self, **kwargs):
         if kwargs.get('virtual'):
             raise ValueError('virtual ports are not supported'
@@ -84,7 +84,7 @@ class PortCommon(object):
                 devtype = 'input'
             else:
                 devtype = 'output'
-            raise IOError('{} port {!r} is already open'.format(devtype,
+            raise OSError('{} port {!r} is already open'.format(devtype,
                                                                 self.name))
         if self.is_input:
             self._port = midi.Input(device['id'])
@@ -101,6 +101,7 @@ class Input(PortCommon, BaseInput):
     """
     PortMidi Input port
     """
+
     def _receive(self, block=True):
         # I get hanging notes if MAX_EVENTS > 1, so I'll have to
         # resort to calling Pm_Read() in a loop until there are no
@@ -115,6 +116,7 @@ class Output(PortCommon, BaseOutput):
     """
     PortMidi output port
     """
+
     def _send(self, message):
         if message.type == 'sysex':
             # Python 2 version of Pygame accepts a bytes or list here

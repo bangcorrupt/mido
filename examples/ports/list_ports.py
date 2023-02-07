@@ -1,17 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 List available ports.
 
 This is a simple version of mido-ports.
 """
-from __future__ import print_function
 import mido
 
 
 def print_ports(heading, port_names):
     print(heading)
     for name in port_names:
-        print("    '{}'".format(name))
+        print(f"    '{name}'")
     print()
 
 

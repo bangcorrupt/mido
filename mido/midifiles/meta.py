@@ -10,13 +10,12 @@ TODO:
      - copy().
      - expose _key_signature_encode/decode?
 """
-from __future__ import print_function, division
 import math
 import struct
-from numbers import Integral
 from contextlib import contextmanager
+from numbers import Integral
+
 from ..messages import BaseMessage, check_time
-from ..py2 import PY2
 
 _charset = 'latin1'
 
@@ -86,7 +85,7 @@ def signed(to_type, n):
     try:
         pack_format, unpack_format = formats[to_type]
     except KeyError:
-        raise ValueError('invalid integer type {}'.format(to_type))
+        raise ValueError(f'invalid integer type {to_type}')
 
     try:
         packed = struct.pack(pack_format, n)
@@ -96,7 +95,7 @@ def signed(to_type, n):
 
 
 def unsigned(to_type, n):
-    return signed('u{}'.format(to_type), n)
+    return signed(f'u{to_type}', n)
 
 
 def encode_variable_int(value):
@@ -127,6 +126,20 @@ def encode_variable_int(value):
         return [0]
 
 
+def decode_variable_int(value):
+    """Decode a list to a variable length integer.
+
+    Does the opposite of encode_variable_int(value)
+    """
+    for i in range(len(value) - 1):
+        value[i] &= ~0x80
+    val = 0
+    for i in value:
+        val <<= 7
+        val |= i
+    return val
+
+
 def encode_string(string):
     return list(bytearray(string.encode(_charset)))
 
@@ -148,21 +161,15 @@ def check_int(value, low, high):
     if not isinstance(value, Integral):
         raise TypeError('attribute must be an integer')
     elif not low <= value <= high:
-        raise ValueError('attribute must be in range {}..{}'.format(low, high))
-
-
-if PY2:
-    _STRING_TYPE = (str, unicode)  # noqa: F821
-else:
-    _STRING_TYPE = str
+        raise ValueError(f'attribute must be in range {low}..{high}')
 
 
 def check_str(value):
-    if not isinstance(value, _STRING_TYPE):
+    if not isinstance(value, str):
         raise TypeError('attribute must be a string')
 
 
-class MetaSpec(object):
+class MetaSpec:
     # The default is to do no checks.
     def check(self, name, value):
         pass
@@ -334,7 +341,7 @@ class MetaSpec_smpte_offset(MetaSpec):
         if name == 'frame_rate':
             if value not in _smpte_framerate_encode:
                 valid = ', '.join(sorted(_smpte_framerate_encode.keys()))
-                raise ValueError('frame_rate must be one of {}'.format(valid))
+                raise ValueError(f'frame_rate must be one of {valid}')
         elif name == 'hours':
             check_int(value, 0, 255)
         elif name in ['minutes', 'seconds']:
@@ -406,7 +413,7 @@ class MetaSpec_key_signature(MetaSpec):
 
     def check(self, name, value):
         if value not in _key_signature_encode:
-            raise ValueError('invalid key {!r}'.format(value))
+            raise ValueError(f'invalid key {value!r}')
 
 
 class MetaSpec_sequencer_specific(MetaSpec):
@@ -520,10 +527,10 @@ class MetaMessage(BaseMessage):
             self_vars[name] = value
 
         elif name in self_vars:
-            raise AttributeError('{} attribute is read only'.format(name))
+            raise AttributeError(f'{name} attribute is read only')
         else:
             raise AttributeError(
-                '{} message has no attribute {}'.format(self.type, name))
+                f'{self.type} message has no attribute {name}')
 
     __setattr__ = _setattr
 
@@ -532,6 +539,25 @@ class MetaMessage(BaseMessage):
         data = spec.encode(self)
 
         return ([0xff, spec.type_byte] + encode_variable_int(len(data)) + data)
+
+    @classmethod
+    def from_bytes(cls, msg_bytes):
+        if msg_bytes[0] != 0xff:
+            raise ValueError('bytes does not correspond to a MetaMessage.')
+        scan_end = 2
+        data = []
+        flag = True
+        while flag and scan_end < len(msg_bytes):
+            scan_end += 1
+            length_data = msg_bytes[2:scan_end]
+            length = decode_variable_int(length_data)
+            data = msg_bytes[scan_end:]
+            if length == len(data):
+                flag = False
+        if flag:
+            raise ValueError('Bad data. Cannot be converted to message.')
+        msg = build_meta_message(msg_bytes[1], data)
+        return msg
 
     def _get_value_names(self):
         """Used by BaseMessage.__repr__()."""

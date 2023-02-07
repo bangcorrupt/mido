@@ -43,7 +43,7 @@ Full documentation at https://mido.readthedocs.io/
 Main Features
 -------------
 
-* works in Python 2 and 3.
+* works in Python 3.
 
 * convenient message objects.
 
@@ -81,7 +81,7 @@ Status
 Requirements
 ------------
 
-Mido targets Python 3.6 and 2.7.
+Mido requires Python 3.7 or higher.
 
 
 Installing
@@ -89,11 +89,11 @@ Installing
 
 ::
 
-    pip install mido
+    python3 -m pip install mido
 
 If you want to use ports::
 
-   pip install python-rtmidi
+   python3 -m pip install python-rtmidi
 
 See ``docs/backends/`` for other backends.
 

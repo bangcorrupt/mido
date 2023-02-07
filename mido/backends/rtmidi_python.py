@@ -17,17 +17,12 @@ TODO:
   mido.backends.rtmidi.)There may be a way to remove this filtering.
 
 """
-from __future__ import absolute_import
+import queue
+
 import rtmidi_python as rtmidi
 # TODO: change this to a relative import if the backend is included in
 # the package.
 from ..ports import BaseInput, BaseOutput
-from ..py2 import PY2
-
-if PY2:
-    import Queue as queue
-else:
-    import queue
 
 
 def get_devices(api=None, **kwargs):
@@ -47,7 +42,7 @@ def get_devices(api=None, **kwargs):
     return list(devices.values())
 
 
-class PortCommon(object):
+class PortCommon:
     def _open(self, virtual=False, **kwargs):
 
         self._queue = queue.Queue()
@@ -68,7 +63,7 @@ class PortCommon(object):
 
         if virtual:
             if self.name is None:
-                raise IOError('virtual port must have a name')
+                raise OSError('virtual port must have a name')
             self._rt.open_virtual_port(self.name)
         else:
             if self.name is None:
@@ -77,23 +72,23 @@ class PortCommon(object):
                 try:
                     self.name = ports[0]
                 except IndexError:
-                    raise IOError('no ports available')
+                    raise OSError('no ports available')
 
             try:
                 port_id = ports.index(self.name)
             except ValueError:
-                raise IOError('unknown port {!r}'.format(self.name))
+                raise OSError(f'unknown port {self.name!r}')
 
             try:
                 self._rt.open_port(port_id)
             except RuntimeError as err:
-                raise IOError(*err.args)
+                raise OSError(*err.args)
 
         # api = _api_to_name[self._rt.get_current_api()]
         api = ''
-        self._device_type = 'RtMidi/{}'.format(api)
+        self._device_type = f'RtMidi/{api}'
         if virtual:
-            self._device_type = 'virtual {}'.format(self._device_type)
+            self._device_type = f'virtual {self._device_type}'
 
     @property
     def callback(self):
